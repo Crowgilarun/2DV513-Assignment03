@@ -163,13 +163,13 @@ public class Database {
 
             switch (table) {
                 case "Pet":
-                    statement = con.prepareStatement("SELECT * FROM petView WHERE id = ?");
+                    statement = con.prepareStatement("SELECT * FROM pet WHERE petID = ?");
                     statement.setInt(1, id);
                     set = statement.executeQuery();
                     if (set.next())
                         return new Pet(set.getInt(1), set.getString(2), set.getDouble(3),
                                 set.getDouble(4), set.getDate(5),
-                                set.getString(6), set.getString(7), set.getInt(8));
+                                set.getInt(6), set.getInt(7));
                 case "Worker":
                     statement = con.prepareStatement(
                             "SELECT workerID, worker.name, phoneNumber, birthday, startDate, wage, position.name" +
