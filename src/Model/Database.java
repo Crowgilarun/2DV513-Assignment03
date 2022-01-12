@@ -13,6 +13,7 @@ public class Database {
         try {
             con = DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {
+            e.printStackTrace();
             System.out.println("Error: Could not connect to the database.");
         }
     }
@@ -290,27 +291,136 @@ public class Database {
         }
     }
 
-    public void importDumpData(File script) {
+    public void importDumpData() {
+        boolean databaseFound;
         try {
-            Statement statement = con.createStatement();
-            Scanner scanner = new Scanner(script);
-            scanner.useDelimiter(";");
-            String query;
-
-            while (scanner.hasNext()) {
-                query = scanner.next().trim();
-                if (statement != null && !query.isEmpty()) {
-                    statement.execute(query);
-                }
-            }
-            scanner.close();
-            createViews();
-            if (statement != null)
-                statement.close();
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
+            con.createStatement().executeQuery("USE petstore");
+            databaseFound = true;
+        } catch (SQLException e) {
+            databaseFound = false;
         }
+        if (!databaseFound) {
+            try {
+                Statement statement = con.createStatement();
+                Scanner scanner = new Scanner("CREATE DATABASE `petstore`;\n" +
+                        "USE `petstore`;\n" +
+                        "\n" +
+                        "CREATE TABLE `customer` (\n" +
+                        "  `customerID` int(11) NOT NULL AUTO_INCREMENT,\n" +
+                        "  `name` varchar(45) DEFAULT NULL,\n" +
+                        "  `phoneNumber` varchar(20) DEFAULT NULL,\n" +
+                        "  PRIMARY KEY (`customerID`)\n" +
+                        ");\n" +
+                        "CREATE TABLE `species` (\n" +
+                        "  `speciesID` int(11) NOT NULL,\n" +
+                        "  `name` varchar(45) NOT NULL,\n" +
+                        "  PRIMARY KEY (`speciesID`),\n" +
+                        "  UNIQUE KEY `name_UNIQUE` (`name`)\n" +
+                        ");\n" +
+                        "CREATE TABLE `pet` (\n" +
+                        "  `petID` int(11) NOT NULL AUTO_INCREMENT,\n" +
+                        "  `name` varchar(45) DEFAULT NULL,\n" +
+                        "  `height` double NOT NULL,\n" +
+                        "  `weight` double NOT NULL,\n" +
+                        "  `birthday` date DEFAULT NULL,\n" +
+                        "  `speciesID` int(11) NOT NULL,\n" +
+                        "  `ownerID` int(11) DEFAULT NULL,\n" +
+                        "  PRIMARY KEY (`petID`),\n" +
+                        "  FOREIGN KEY (`ownerID`) REFERENCES `customer` (`customerID`) ON DELETE SET NULL ON UPDATE NO ACTION,\n" +
+                        "  FOREIGN KEY (`speciesID`) REFERENCES `species` (`speciesID`) ON DELETE NO ACTION ON UPDATE NO ACTION\n" +
+                        ");\n" +
+                        "CREATE TABLE `position` (\n" +
+                        "  `positionID` int(11) NOT NULL,\n" +
+                        "  `name` varchar(45) NOT NULL,\n" +
+                        "  PRIMARY KEY (`positionID`),\n" +
+                        "  UNIQUE KEY `name_UNIQUE` (`name`)\n" +
+                        ");\n" +
+                        "CREATE TABLE `worker` (\n" +
+                        "  `workerID` int(11) NOT NULL AUTO_INCREMENT,\n" +
+                        "  `name` varchar(45) NOT NULL,\n" +
+                        "  `phoneNumber` varchar(20) DEFAULT NULL,\n" +
+                        "  `birthday` date NOT NULL,\n" +
+                        "  `startDate` date NOT NULL,\n" +
+                        "  `wage` double NOT NULL,\n" +
+                        "  `positionID` int(11) NOT NULL,\n" +
+                        "  PRIMARY KEY (`workerID`),\n" +
+                        "  FOREIGN KEY (`positionID`) REFERENCES `position` (`positionID`) ON DELETE NO ACTION ON UPDATE NO ACTION\n" +
+                        ");\n" +
+                        "CREATE TABLE `adoption` (\n" +
+                        "  `adoptionID` int(11) NOT NULL AUTO_INCREMENT,\n" +
+                        "  `customerID` int(11) NOT NULL,\n" +
+                        "  `petID` int(11) NOT NULL,\n" +
+                        "  `workerID` int(11) NOT NULL,\n" +
+                        "  `price` double NOT NULL,\n" +
+                        "  `date` datetime NOT NULL,\n" +
+                        "  PRIMARY KEY (`adoptionID`),\n" +
+                        "  FOREIGN KEY (`customerID`) REFERENCES `customer` (`customerID`) ON DELETE NO ACTION ON UPDATE NO ACTION,\n" +
+                        "  FOREIGN KEY (`petID`) REFERENCES `pet` (`petID`) ON DELETE NO ACTION ON UPDATE NO ACTION,\n" +
+                        "  FOREIGN KEY (`workerID`) REFERENCES `worker` (`workerID`) ON DELETE NO ACTION ON UPDATE NO ACTION\n" +
+                        ");\n" +
+                        "INSERT INTO species(speciesID, name) VALUES\n" +
+                        "(0, 'Cat'),\n" +
+                        "(1, 'Dog'),\n" +
+                        "(2, 'Bird'),\n" +
+                        "(3, 'Snake'),\n" +
+                        "(4, 'Rat'),\n" +
+                        "(5, 'Fish');\n" +
+                        "INSERT INTO `position`(positionID, name) VALUES\n" +
+                        "(0, 'Manager'),\n" +
+                        "(1, 'Clerk'),\n" +
+                        "(2, 'Handler');\n" +
+                        "INSERT INTO worker(workerID, name, phoneNumber, birthday, startDate, wage, positionID) VALUES\n" +
+                        "(null, 'Jimmy', '707230563', '1981-06-30', '2010-07-12', 20000, 0),\n" +
+                        "(null, 'Tom', '727673991', '1978-09-12', '2011-12-30', 20000, 0),\n" +
+                        "(null, 'Fred', '737370315', '1992-10-07', '2009-08-05', 20000, 0),\n" +
+                        "(null, 'Bob', '708337728', '1985-03-12', '2020-10-15', 2000, 1),\n" +
+                        "(null, 'Markus', '701298060', '1995-02-01', '2020-10-15', 2000, 1),\n" +
+                        "(null, 'Fredrik', '794004261', '1987-01-23', '2019-12-01', 2000, 1),\n" +
+                        "(null, 'Viktor', '728105318', '1999-12-01', '2012-01-12', 2000, 1),\n" +
+                        "(null, 'Erik', '733336560', '1960-03-23', '2015-05-04', 2000, 1),\n" +
+                        "(null, 'Filip', '706497826', '1992-12-03', '2017-02-12', 3000, 2),\n" +
+                        "(null, 'Robert', '768951793', '1987-06-09', '2012-06-13', 3000, 2);\n" +
+                        "INSERT INTO customer(customerID, name, phoneNumber) VALUES\n" +
+                        "(null, 'Iris', '708746771'),\n" +
+                        "(null, 'Priscilla', '738820547'),\n" +
+                        "(null, 'Maria', '762844564'),\n" +
+                        "(null, 'Diogenes', null),\n" +
+                        "(null, 'Lorens', '727277153'),\n" +
+                        "(null, 'Helena', '764208160');\n" +
+                        "INSERT INTO pet(petID, name, height, weight, birthday, speciesID, ownerID) VALUES\n" +
+                        "(null, 'Jabba', 12, 300, null, 1, 1),\n" +
+                        "(null, 'Chewbacca', 5, 12, '2021-01-01', 1, 2),\n" +
+                        "(null, 'Ikit', 2, 1, '2015-05-12', 4, null),\n" +
+                        "(null, 'Bruce', 1, 0.5, '2020-08-12', 5, 3),\n" +
+                        "(null, 'Fox', 1, 2, '2019-03-21', 2, 4),\n" +
+                        "(null, 'Wolf', 1, 3, '2019-04-15', 2, 5),\n" +
+                        "(null, 'Falco', 1, 1.5, '2019-05-12', 2, 6);\n" +
+                        "INSERT INTO adoption(adoptionID, customerID, petID,workerID,price,date) VALUES\n" +
+                        "(null, 1, 1, 4, 200, '2021-12-03'),\n" +
+                        "(null, 2, 2, 4, 200, '2021-01-08'),\n" +
+                        "(null, 3, 4, 5, 200, '2020-09-15'),\n" +
+                        "(null, 4, 5, 6, 200, '2019-03-21'),\n" +
+                        "(null, 5, 6, 5, 200, '2020-03-21'),\n" +
+                        "(null, 6, 7, 7, '200', '2019-04-06');");
+                scanner.useDelimiter(";");
+                String query;
+
+                while (scanner.hasNext()) {
+                    query = scanner.next().trim();
+                    if (statement != null && !query.isEmpty()) {
+                        statement.execute(query);
+                    }
+                }
+                scanner.close();
+                createViews();
+                if (statement != null)
+                    statement.close();
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
     }
 
     public void closeDatabase() {
